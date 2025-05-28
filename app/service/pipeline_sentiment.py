@@ -8,19 +8,19 @@ import numpy as np
 class SentimentAnalyzer:
     def __init__(self):
         self.model = self._load_model()
-        
-    @lru_cache()
+
+@lru_cache()
     def _load_model(self):
         return pipeline("sentiment-analysis", 
                        model=settings.model_name, 
                        token=settings.api_key)
-    
+
     def analyze_text(self, text: str) -> Dict[str, Union[str, float]]:
         """Analyse le sentiment d'un texte donné."""
         cleaned_text = preprocess_text(text)
         result = self.model(cleaned_text)[0]
-        return {
-            "label": result["label"].lower(),
+    return {
+        "label": result["label"].lower(),
             "score": round(result["score"], 4)
         }
     
@@ -95,4 +95,4 @@ class SentimentAnalyzer:
                     "negative_edges": sum(1 for e in edge_analyses if e["sentiment"]["label"] == "negative")
                 }
             }
-        }
+    }

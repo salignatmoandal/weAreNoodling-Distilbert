@@ -34,17 +34,17 @@ class TextCleaner:
             return ""
             
         try:
-            text = re.sub(r"[^a-zA-Z0-9\s]", "", text)
-            text = re.sub(r"\s+", " ", text)
-            text = re.sub(r"http\S+", "", text)
-            text = re.sub(r"www\S+", "", text)
-            text = re.sub(r"@\S+", "", text)
-            text = re.sub(r"#\S+", "", text)
-            text = re.sub(r"RT", "", text)
-            text = re.sub(r"via", "", text)
-            text = re.sub(r"amp", "", text)
-            text = re.sub(r"&amp;", "", text)
-            return text.strip().lower()
+    text = re.sub(r"[^a-zA-Z0-9\s]", "", text)
+    text = re.sub(r"\s+", " ", text)
+    text = re.sub(r"http\S+", "", text)
+    text = re.sub(r"www\S+", "", text)
+    text = re.sub(r"@\S+", "", text)
+    text = re.sub(r"#\S+", "", text)
+    text = re.sub(r"RT", "", text)
+    text = re.sub(r"via", "", text)
+    text = re.sub(r"amp", "", text)
+    text = re.sub(r"&amp;", "", text)
+    return text.strip().lower()
         except Exception as e:
             logger.error(f"Erreur lors du nettoyage du texte: {str(e)}")
             return text
@@ -63,9 +63,9 @@ class TextCleaner:
             return ""
             
         try:
-            tokens = text.split()
+    tokens = text.split()
             filtered_tokens = [token for token in tokens if token not in self.stop_words]
-            return " ".join(filtered_tokens)
+    return " ".join(filtered_tokens)
         except Exception as e:
             logger.error(f"Erreur lors de la suppression des mots vides: {str(e)}")
             return text
@@ -85,7 +85,7 @@ class TextCleaner:
             
         try:
             doc = self.nlp(text)
-            return " ".join([token.lemma_ for token in doc])
+    return " ".join([token.lemma_ for token in doc])
         except Exception as e:
             logger.error(f"Erreur lors de la lemmatisation: {str(e)}")
             return text
@@ -107,7 +107,7 @@ class TextCleaner:
             cleaned_text = self.clean_text(text)
             without_stopwords = self.remove_stopwords(cleaned_text)
             lemmatized_text = self.lemmatize_text(without_stopwords)
-            return lemmatized_text
+    return lemmatized_text
         except Exception as e:
             logger.error(f"Erreur lors du prétraitement: {str(e)}")
             return text
