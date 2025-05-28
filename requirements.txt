@@ -4,5 +4,8 @@ transformers
 torch
 pydantic
 python-dotenv
-nltk 
+nltk
 spacy
+pytest
+psutil
+pytest-cov
