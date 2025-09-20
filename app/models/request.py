@@ -4,35 +4,36 @@ from datetime import datetime
 
 class SentimentRequest(BaseModel):
     """
-    Modèle de requête pour l'analyse de sentiment.
-    
+    Request model for sentiment analysis.
+
     Attributes:
-        text (str): Le texte à analyser
-        node_id (Optional[str]): Identifiant du node (optionnel)
-        context (Optional[str]): Contexte supplémentaire (optionnel)
-        metadata (Optional[dict]): Métadonnées supplémentaires (optionnel)
+        text (str): The text to analyze.
+        node_id (Optional[str]): Node identifier (optional).
+        context (Optional[str]): Additional context for analysis (optional).
+        metadata (Optional[dict]): Extra metadata (optional).
     """
     text: constr(min_length=1, max_length=1000) = Field(
         ...,
         example="Create Game – Architecture",
-        description="Texte à analyser"
+        description="The text to be analyzed"
     )
     node_id: Optional[str] = Field(
         None,
         example="node_123",
-        description="Identifiant du node"
+        description="Node identifier"
     )
     context: Optional[str] = Field(
         None,
         example="This node is part of a creative game design workflow.",
-        description="Contexte supplémentaire"
+        description="Additional context for analysis"
     )
     metadata: Optional[dict] = Field(
         None,
-        description="Métadonnées supplémentaires"
+        description="Extra metadata (e.g., source, timestamp, tags)"
     )
 
     class Config:
+        # Example schema for OpenAPI docs and validation previews
         schema_extra = {
             "example": {
                 "text": "Create Game – Architecture",
