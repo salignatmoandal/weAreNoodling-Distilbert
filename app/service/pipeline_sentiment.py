@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Union
 from transformers import pipeline
 from functools import lru_cache
 import numpy as np
@@ -9,56 +9,61 @@ from app.utils.text_cleaner import preprocess_text
 logger = logging.getLogger(__name__)
 
 class SentimentAnalyzer:
-    """Analyseur de sentiment pour les textes, nodes et edges d'un graphe."""
+    """Perform sentiment analysis on text, nodes, edges, and entire graphs."""
 
     def __init__(self):
-        """Initialise l'analyseur de sentiment avec le modèle configuré."""
+        """Initialize the sentiment analyzer with the configured model."""
         self.model = self._load_model()
-        logger.info("SentimentAnalyzer initialisé avec succès")
+        logger.info("SentimentAnalyzer successfully initialized")
 
     @lru_cache()
     def _load_model(self):
-        """Charge le modèle de sentiment analysis avec mise en cache."""
+        """
+        Load and cache the sentiment analysis model.
+
+        Returns:
+            HuggingFace pipeline object for sentiment analysis.
+        """
         try:
             return pipeline(
                 "sentiment-analysis", 
                 model=settings.model_name, 
-                token=settings.api_key
+                token=settings.api_key  # ⚠️ Not a standard HuggingFace param, check config
             )
         except Exception as e:
-            logger.error(f"Erreur lors du chargement du modèle: {str(e)}")
+            logger.error(f"Error loading model: {str(e)}")
             raise
 
     def analyze_text(self, text: str) -> Dict[str, Union[str, float]]:
         """
-        Analyse le sentiment d'un texte donné.
-        
+        Analyze sentiment of a single text string.
+
         Args:
-            text (str): Le texte à analyser
-            
+            text (str): Input text.
+
         Returns:
-            Dict[str, Union[str, float]]: Résultat de l'analyse avec label et score
+            Dict[str, Union[str, float]]: Sentiment result with label and score.
         """
         try:
-            cleaned_text = preprocess_text(text)
-            result = self.model(cleaned_text)[0]
+            cleaned_text = preprocess_text(text)  # Clean input before inference
+            result = self.model(cleaned_text)[0]  # HuggingFace returns a list, take first item
             return {
-                "label": result["label"].lower(),
-                "score": round(result["score"], 4)
+                "label": result["label"].lower(),   # Normalize label to lowercase
+                "score": round(result["score"], 4)  # Round score to 4 decimals
             }
         except Exception as e:
-            logger.error(f"Erreur lors de l'analyse du texte: {str(e)}")
+            logger.error(f"Error analyzing text: {str(e)}")
             raise
 
     def analyze_node(self, node_data: Dict) -> Dict:
         """
-        Analyse le sentiment d'un node.
-        
+        Analyze sentiment of a graph node.
+
         Args:
-            node_data (Dict): Données du node contenant au minimum 'id' et 'text'
-            
+            node_data (Dict): Node data containing at least 'id' and 'text'.
+
         Returns:
-            Dict: Résultat de l'analyse avec les métadonnées du node
+            Dict: Sentiment result including node metadata.
         """
         try:
             text = node_data.get("text", "")
@@ -69,31 +74,31 @@ class SentimentAnalyzer:
                 "metadata": node_data.get("metadata", {})
             }
         except Exception as e:
-            logger.error(f"Erreur lors de l'analyse du node: {str(e)}")
+            logger.error(f"Error analyzing node: {str(e)}")
             raise
 
     def analyze_edge(self, edge_data: Dict, connected_nodes: List[Dict]) -> Dict:
         """
-        Analyse le sentiment d'un edge basé sur les nodes connectés.
-        
+        Analyze sentiment of an edge based on its connected nodes.
+
         Args:
-            edge_data (Dict): Données de l'edge
-            connected_nodes (List[Dict]): Liste des nodes connectés
-            
+            edge_data (Dict): Edge information (id, metadata, etc.)
+            connected_nodes (List[Dict]): List of connected nodes.
+
         Returns:
-            Dict: Résultat de l'analyse avec les métadonnées de l'edge
+            Dict: Sentiment result for the edge with aggregated scores.
         """
         try:
-            # Calculer le sentiment agrégé des nodes connectés
+            # Collect sentiment scores from connected nodes
             node_sentiments = [
                 self.analyze_node(node)["sentiment"]["score"] 
                 for node in connected_nodes
             ]
             
-            # Calculer la moyenne des scores de sentiment
+            # Compute average sentiment across connected nodes
             avg_sentiment = np.mean(node_sentiments)
             
-            # Déterminer le label basé sur le score moyen
+            # Assign label based on threshold
             label = "positive" if avg_sentiment > 0.5 else "negative"
             
             return {
@@ -106,28 +111,28 @@ class SentimentAnalyzer:
                 "metadata": edge_data.get("metadata", {})
             }
         except Exception as e:
-            logger.error(f"Erreur lors de l'analyse de l'edge: {str(e)}")
+            logger.error(f"Error analyzing edge: {str(e)}")
             raise
 
     def analyze_graph(self, nodes: List[Dict], edges: List[Dict]) -> Dict:
         """
-        Analyse le sentiment de l'ensemble du graphe.
-        
+        Perform sentiment analysis on an entire graph.
+
         Args:
-            nodes (List[Dict]): Liste des nodes du graphe
-            edges (List[Dict]): Liste des edges du graphe
-            
+            nodes (List[Dict]): List of graph nodes.
+            edges (List[Dict]): List of graph edges.
+
         Returns:
-            Dict: Résultat complet de l'analyse avec métriques
+            Dict: Complete analysis including node/edge results and metrics.
         """
         try:
-            # Analyser tous les nodes
+            # Analyze all nodes individually
             node_analyses = [self.analyze_node(node) for node in nodes]
             
-            # Créer un dictionnaire des nodes pour accès rapide
+            # Build dictionary for fast node lookup by id
             nodes_dict = {node["id"]: node for node in nodes}
             
-            # Analyser tous les edges
+            # Analyze all edges
             edge_analyses = []
             for edge in edges:
                 source_node = nodes_dict.get(edge.get("source"))
@@ -139,7 +144,7 @@ class SentimentAnalyzer:
                     )
                     edge_analyses.append(edge_analysis)
             
-            # Calculer les métriques globales
+            # Compute global metrics
             node_sentiments = [analysis["sentiment"]["score"] for analysis in node_analyses]
             edge_sentiments = [analysis["sentiment"]["score"] for analysis in edge_analyses]
             
@@ -148,15 +153,4 @@ class SentimentAnalyzer:
                 "edges": edge_analyses,
                 "metrics": {
                     "average_node_sentiment": round(np.mean(node_sentiments), 4),
-                    "average_edge_sentiment": round(np.mean(edge_sentiments), 4),
-                    "sentiment_distribution": {
-                        "positive_nodes": sum(1 for n in node_analyses if n["sentiment"]["label"] == "positive"),
-                        "negative_nodes": sum(1 for n in node_analyses if n["sentiment"]["label"] == "negative"),
-                        "positive_edges": sum(1 for e in edge_analyses if e["sentiment"]["label"] == "positive"),
-                        "negative_edges": sum(1 for e in edge_analyses if e["sentiment"]["label"] == "negative")
-                    }
-                }
-            }
-        except Exception as e:
-            logger.error(f"Erreur lors de l'analyse du graphe: {str(e)}")
-            raise
+                    "average_edge_sentiment": round(np.mean(edg
